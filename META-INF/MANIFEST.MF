@@ -1,5 +1,0 @@
-Manifest-Version: 1.0
-Main-Class: PChangeRPO
-Class-Path: lib/javax.json-api-1.0.jar lib/javax.json-1.0.4.jar
-Created-By: 1.8.0_111 (Oracle Corporation)
-
