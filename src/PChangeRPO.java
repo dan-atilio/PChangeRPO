@@ -8,8 +8,10 @@ import java.beans.PropertyChangeListener;
 import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Formatter;
 import javax.swing.UIManager.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -24,6 +26,7 @@ class PChangeRPO extends JFrame implements ActionListener, PropertyChangeListene
 	private JButton btnQuit, btnAbout, btnConfirm, btnExport, btnImport;
 	private JButton btnNew, btnRemove;
 	private JButton btnCompile, btnCurrent, btnNewApo;
+	private JButton btnViewLog;
 	private JLabel lbCompile, lbCurrent, lbNew, lbProces;
 	private JTextField jtCompile, jtCurrent, jtNew;
 	private static ImageIcon appIcon = new ImageIcon("images/pchangerpo.png");
@@ -31,6 +34,8 @@ class PChangeRPO extends JFrame implements ActionListener, PropertyChangeListene
 	private String strCompile = "";
 	private String strCurrent = "";
 	private String strNew = "";
+	private String fileName = "log.csv";
+	private String messageLog = "";
 	private List <String> strList = new ArrayList<String>();
 	private int verScroll = ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS; 
 	private int horScroll = ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS;
@@ -145,7 +150,7 @@ class PChangeRPO extends JFrame implements ActionListener, PropertyChangeListene
 
 		//botao de processar
 		btnConfirm = new JButton("Processar");
-		btnConfirm.setBounds(05, 385, 120, 30);
+		btnConfirm.setBounds(05, 380, 120, 50);
 		btnConfirm.setForeground(Color.RED);
 		btnConfirm.setToolTipText("Processa a atualizacao");
 		btnConfirm.setMnemonic('P');
@@ -153,8 +158,16 @@ class PChangeRPO extends JFrame implements ActionListener, PropertyChangeListene
 		add(btnConfirm);
 		
 		//botao de exportar
+		btnViewLog = new JButton("Visualizar Logs");
+		btnViewLog.setBounds(135, 380, 120, 50);
+		btnViewLog.setToolTipText("Visualizar arquivos de Log");
+		btnViewLog.setMnemonic('L');
+		btnViewLog.addActionListener(this);
+		add(btnViewLog);
+		
+		//botao de exportar
 		btnExport = new JButton("Salvar config...");
-		btnExport.setBounds(175, 390, 100, 20);
+		btnExport.setBounds(350, 380, 120, 23);
 		btnExport.setToolTipText("Salvar/Exportar configurações");
 		btnExport.setMnemonic('S');
 		btnExport.addActionListener(this);
@@ -162,7 +175,7 @@ class PChangeRPO extends JFrame implements ActionListener, PropertyChangeListene
 		
 		//botao de importar
 		btnImport = new JButton("Abrir config...");
-		btnImport.setBounds(280, 390, 100, 20);
+		btnImport.setBounds(350, 407, 120, 23);
 		btnImport.setToolTipText("Abrir/Importar configurações");
 		btnImport.setMnemonic('A');
 		btnImport.addActionListener(this);
@@ -170,7 +183,7 @@ class PChangeRPO extends JFrame implements ActionListener, PropertyChangeListene
 		
 		//botao de sobre
 		btnAbout = new JButton("Sobre");
-		btnAbout.setBounds(385, 390, 100, 20);
+		btnAbout.setBounds(480, 380, 120, 23);
 		btnAbout.setToolTipText("Sobre a ferramenta");
 		btnAbout.setMnemonic('o');
 		btnAbout.addActionListener(this);
@@ -178,7 +191,7 @@ class PChangeRPO extends JFrame implements ActionListener, PropertyChangeListene
 
 		//botao de sair
 		btnQuit = new JButton("Sair");
-		btnQuit.setBounds(490, 390, 100, 20);
+		btnQuit.setBounds(480, 407, 120, 23);
 		btnQuit.setToolTipText("Encerra o programa!");
 		btnQuit.setMnemonic('S');
 		btnQuit.addActionListener(this);
@@ -300,6 +313,9 @@ class PChangeRPO extends JFrame implements ActionListener, PropertyChangeListene
 			lbProces.setText("Iniciando processamento...");
 			lbProces.setForeground(Color.BLACK);
 			
+			/* Pega uma descrição para colocar no log */
+			messageLog = new Input("Insira um texto de log da operacao:", appIcon, "[atualizacao]").getInput();
+			
 			//chama a tarefa
 			setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
             task = new Task();
@@ -362,8 +378,8 @@ class PChangeRPO extends JFrame implements ActionListener, PropertyChangeListene
 		//Se vier do botão de sobre
 		if (event.getSource() == btnAbout) {
 			String aboutMessage = "";
-			aboutMessage += "PChangeRPO versão 1.1\n";
-			aboutMessage += "Revisão em Março de 2021\n";
+			aboutMessage += "PChangeRPO versão 1.2\n";
+			aboutMessage += "Revisão em Abril de 2022\n";
 			aboutMessage += "Projeto open source, desenvolvido utilizando Java\n\n";
 			aboutMessage += "Deseja abrir o nosso site com mais informações?";
 			
@@ -376,6 +392,15 @@ class PChangeRPO extends JFrame implements ActionListener, PropertyChangeListene
 						e.printStackTrace();
 					}
 				}
+			}
+		}
+		
+		/* se vier do botão para abrir o arquivo de log */
+		if (event.getSource() == btnViewLog) {
+			try {
+				Desktop.getDesktop().open(new File(fileName));
+			} catch (IOException e) {
+				e.printStackTrace();
 			}
 		}
 
@@ -603,7 +628,7 @@ class PChangeRPO extends JFrame implements ActionListener, PropertyChangeListene
  
     class Task extends SwingWorker<Void, Void> {
         @Override
-        public Void doInBackground() throws InterruptedException {
+        public Void doInBackground() throws InterruptedException, IOException {
         	
             /* Define a barra como 0, e as variaveis de controle */
             setProgress(0);
@@ -621,6 +646,9 @@ class PChangeRPO extends JFrame implements ActionListener, PropertyChangeListene
             /* Chama a troca de repositório */
             changeReposit();
             
+            /* Atualiza o arquivo de logs */
+            updateLogFile();
+            
             /* Agora define o fim da régua*/
             barCurrPercent = 100;
             setProgress(barCurrPercent);
@@ -636,6 +664,35 @@ class PChangeRPO extends JFrame implements ActionListener, PropertyChangeListene
             setCursor(null);
         }
     }
+    
+    private void updateLogFile() throws IOException {
+		File log = new File(fileName);
+		String headerLine = "";
+		String line = "";
+		Calendar c = Calendar.getInstance();
+		SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+		String date = sdf.format(c.getTime()).substring(0, 10); 
+		String time = sdf.format(c.getTime()).substring(11);
+		
+		/* Se o arquivo não existir, cria ele vazio */
+		if (! log.exists()) {
+			log.createNewFile();
+			headerLine = "Usuario;Data;Hora;Descricao;";
+		}
+		
+		/* Agora faz um append com informações do usuário */
+		line  = System.getProperty("user.name") + ";";
+		line += date + ";";
+		line += time + ";";
+		line += messageLog + ";";
+		
+		/* Grava no log as linhas */
+		PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(fileName, true)));
+		if (! headerLine.isEmpty())
+			out.println(headerLine);
+	    out.println(line);
+	    out.close();
+	}
 
 	//programa principal
 	public static void main(String arg[]){
@@ -644,7 +701,7 @@ class PChangeRPO extends JFrame implements ActionListener, PropertyChangeListene
 		PChangeRPO frame = new PChangeRPO();
 		frame.setSize(width, height);
 		frame.setLocationRelativeTo(null);
-		frame.setTitle("PChangeRPO v1.1 - Troca de RPO a quente do Protheus");
+		frame.setTitle("PChangeRPO v1.2 - Troca de RPO a quente do Protheus");
 		frame.getContentPane().setBackground(Color.WHITE);
 		frame.setResizable(false);
 		frame.setDefaultCloseOperation( JFrame.DO_NOTHING_ON_CLOSE );
