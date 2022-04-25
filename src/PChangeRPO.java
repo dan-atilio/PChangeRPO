@@ -378,7 +378,7 @@ class PChangeRPO extends JFrame implements ActionListener, PropertyChangeListene
 		//Se vier do botão de sobre
 		if (event.getSource() == btnAbout) {
 			String aboutMessage = "";
-			aboutMessage += "PChangeRPO versão 1.2\n";
+			aboutMessage += "PChangeRPO versão 1.2b\n";
 			aboutMessage += "Revisão em Abril de 2022\n";
 			aboutMessage += "Projeto open source, desenvolvido utilizando Java\n\n";
 			aboutMessage += "Deseja abrir o nosso site com mais informações?";
@@ -550,14 +550,14 @@ class PChangeRPO extends JFrame implements ActionListener, PropertyChangeListene
 								//pega o texto antigo
 								while((currentLine = reader.readLine()) != null)
 								{
-									oldText += currentLine + "\r\n";
+									oldText += currentLine.toLowerCase() + "\r\n";
 								}
 								reader.close();
 
 								//substitui o conteudo
 								//if (novo.contains("\\"))
 								//	textoNovo = textoAntigo.replaceAll("\\", "\\\\");
-								newText = oldText.replace(strCurrent, strNew);
+								newText = oldText.replace(strCurrent.toLowerCase(), strNew.toLowerCase());
 
 								//cria o texto novo
 								FileWriter writer = new FileWriter(fileEdit);
@@ -628,7 +628,7 @@ class PChangeRPO extends JFrame implements ActionListener, PropertyChangeListene
  
     class Task extends SwingWorker<Void, Void> {
         @Override
-        public Void doInBackground() throws InterruptedException, IOException {
+        public Void doInBackground() throws InterruptedException {
         	
             /* Define a barra como 0, e as variaveis de controle */
             setProgress(0);
@@ -665,7 +665,7 @@ class PChangeRPO extends JFrame implements ActionListener, PropertyChangeListene
         }
     }
     
-    private void updateLogFile() throws IOException {
+    private void updateLogFile() {
 		File log = new File(fileName);
 		String headerLine = "";
 		String line = "";
@@ -674,24 +674,30 @@ class PChangeRPO extends JFrame implements ActionListener, PropertyChangeListene
 		String date = sdf.format(c.getTime()).substring(0, 10); 
 		String time = sdf.format(c.getTime()).substring(11);
 		
-		/* Se o arquivo não existir, cria ele vazio */
-		if (! log.exists()) {
-			log.createNewFile();
-			headerLine = "Usuario;Data;Hora;Descricao;";
+		try {
+			/* Se o arquivo não existir, cria ele vazio */
+			if (! log.exists()) {
+				log.createNewFile();
+				headerLine = "Usuario;Data;Hora;APO;Descricao;";
+			}
+			
+			/* Agora faz um append com informações do usuário */
+			line  = System.getProperty("user.name") + ";";
+			line += date + ";";
+			line += time + ";";
+			line += jtNew.getText().trim() + ";";
+			line += messageLog + ";";
+			
+			/* Grava no log as linhas */
+			PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(fileName, true)));
+			if (! headerLine.isEmpty())
+				out.println(headerLine);
+		    out.println(line);
+		    out.close();
 		}
-		
-		/* Agora faz um append com informações do usuário */
-		line  = System.getProperty("user.name") + ";";
-		line += date + ";";
-		line += time + ";";
-		line += messageLog + ";";
-		
-		/* Grava no log as linhas */
-		PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(fileName, true)));
-		if (! headerLine.isEmpty())
-			out.println(headerLine);
-	    out.println(line);
-	    out.close();
+		catch (IOException e) {
+			JOptionPane.showMessageDialog(null, "Não foi possível criar/atualizar o arquivo [" + fileName + "]!\nVerifique se o arquivo não esta aberto em outro software.", "Atenção", 0);
+		}
 	}
 
 	//programa principal
@@ -701,7 +707,7 @@ class PChangeRPO extends JFrame implements ActionListener, PropertyChangeListene
 		PChangeRPO frame = new PChangeRPO();
 		frame.setSize(width, height);
 		frame.setLocationRelativeTo(null);
-		frame.setTitle("PChangeRPO v1.2 - Troca de RPO a quente do Protheus");
+		frame.setTitle("PChangeRPO v1.2b - Troca de RPO a quente do Protheus");
 		frame.getContentPane().setBackground(Color.WHITE);
 		frame.setResizable(false);
 		frame.setDefaultCloseOperation( JFrame.DO_NOTHING_ON_CLOSE );
