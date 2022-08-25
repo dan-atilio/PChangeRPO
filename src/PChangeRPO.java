@@ -36,6 +36,7 @@ class PChangeRPO extends JFrame implements ActionListener, PropertyChangeListene
 	private String strNew = "";
 	private String fileName = "log.csv";
 	private String messageLog = "";
+	private static String appVersion = "1.2c";
 	private List <String> strList = new ArrayList<String>();
 	private int verScroll = ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS; 
 	private int horScroll = ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS;
@@ -378,8 +379,8 @@ class PChangeRPO extends JFrame implements ActionListener, PropertyChangeListene
 		//Se vier do botão de sobre
 		if (event.getSource() == btnAbout) {
 			String aboutMessage = "";
-			aboutMessage += "PChangeRPO versão 1.2b\n";
-			aboutMessage += "Revisão em Abril de 2022\n";
+			aboutMessage += "PChangeRPO versão " + appVersion + "\n";
+			aboutMessage += "Revisão em Agosto de 2022\n";
 			aboutMessage += "Projeto open source, desenvolvido utilizando Java\n\n";
 			aboutMessage += "Deseja abrir o nosso site com mais informações?";
 			
@@ -484,6 +485,11 @@ class PChangeRPO extends JFrame implements ActionListener, PropertyChangeListene
 		strCurrent = jtCurrent.getText().trim();
 		strNew = jtNew.getText().trim();
 		strList = objConfig.getList();
+		Calendar c = Calendar.getInstance();
+		SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+		String date = sdf.format(c.getTime()).substring(0, 10); 
+		String time = sdf.format(c.getTime()).substring(11);
+		String bkpName = "_" + date.replace("/", "-") + "_" + time.replace(":", "-") + ".bkp";
 
 		//testando os campos
 		if (strCompile.isEmpty()) {
@@ -543,21 +549,31 @@ class PChangeRPO extends JFrame implements ActionListener, PropertyChangeListene
 						//Se tiver o nome do arquivo tiver appserver e no final tiver .ini
 						if (files[currentFile].contains("appserver") && files[currentFile].endsWith(".ini")){
 							try {
+								//cria a pasta de backups
+								File bkpDir = new File(appDir + "\\bkps");
+								if (!bkpDir.exists()){
+									bkpDir.mkdirs();
+								}
+								
 								File fileEdit = new File(appDir, files[currentFile]);
+								File fileBkp = new File(bkpDir, files[currentFile] + bkpName);
 								BufferedReader reader = new BufferedReader(new FileReader(fileEdit));
-								String currentLine = "", oldText = "", newText = "";
+								String currentLine = "", newText = "";
 
 								//pega o texto antigo
 								while((currentLine = reader.readLine()) != null)
 								{
-									oldText += currentLine.toLowerCase() + "\r\n";
+									//se conter o texto procurado do apo atual, substitui pelo apo novo
+									if (currentLine.toLowerCase().contains(strCurrent.toLowerCase())) {
+										newText += currentLine.toLowerCase().replace(strCurrent.toLowerCase(), strNew.toLowerCase()) + "\r\n";
+									}
+									else
+										newText += currentLine + "\r\n";
 								}
 								reader.close();
 
-								//substitui o conteudo
-								//if (novo.contains("\\"))
-								//	textoNovo = textoAntigo.replaceAll("\\", "\\\\");
-								newText = oldText.replace(strCurrent.toLowerCase(), strNew.toLowerCase());
+								//cria um backup do appserver*.ini atual, renomeando o arquivo
+								fileEdit.renameTo(fileBkp);
 
 								//cria o texto novo
 								FileWriter writer = new FileWriter(fileEdit);
@@ -707,7 +723,7 @@ class PChangeRPO extends JFrame implements ActionListener, PropertyChangeListene
 		PChangeRPO frame = new PChangeRPO();
 		frame.setSize(width, height);
 		frame.setLocationRelativeTo(null);
-		frame.setTitle("PChangeRPO v1.2b - Troca de RPO a quente do Protheus");
+		frame.setTitle("PChangeRPO v" + appVersion + " - Troca de RPO a quente do Protheus");
 		frame.getContentPane().setBackground(Color.WHITE);
 		frame.setResizable(false);
 		frame.setDefaultCloseOperation( JFrame.DO_NOTHING_ON_CLOSE );
